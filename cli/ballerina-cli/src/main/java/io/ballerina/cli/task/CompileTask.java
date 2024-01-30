@@ -18,6 +18,7 @@
 
 package io.ballerina.cli.task;
 
+import io.ballerina.cli.tool.AnnotateDiagnostics;
 import io.ballerina.cli.utils.BuildTime;
 import io.ballerina.projects.CodeGeneratorResult;
 import io.ballerina.projects.CodeModifierResult;
@@ -212,7 +213,7 @@ public class CompileTask implements Task {
                 }
                 if (d.diagnosticInfo().code() == null || !d.diagnosticInfo().code().equals(
                         ProjectDiagnosticErrorCode.BUILT_WITH_OLDER_SL_UPDATE_DISTRIBUTION.diagnosticId())) {
-                    err.println(d);
+                    err.println(AnnotateDiagnostics.renderDiagnostic(d));
                 }
             }
             if (hasErrors) {

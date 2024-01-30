@@ -17,21 +17,24 @@
  */
 package io.ballerina.projects.internal;
 
+import io.ballerina.compiler.syntax.tree.ModulePartNode;
+import io.ballerina.compiler.syntax.tree.NonTerminalNode;
 import io.ballerina.projects.ModuleDescriptor;
 import io.ballerina.projects.ModuleName;
 import io.ballerina.projects.Project;
 import io.ballerina.projects.ProjectKind;
 import io.ballerina.projects.util.ProjectConstants;
+import io.ballerina.compiler.syntax.tree.SyntaxTree;
 import io.ballerina.tools.diagnostics.Diagnostic;
 import io.ballerina.tools.diagnostics.DiagnosticFactory;
 import io.ballerina.tools.diagnostics.DiagnosticInfo;
 import io.ballerina.tools.diagnostics.DiagnosticProperty;
 import io.ballerina.tools.diagnostics.Location;
-import io.ballerina.tools.text.LinePosition;
-import io.ballerina.tools.text.LineRange;
-import io.ballerina.tools.text.TextRange;
+import io.ballerina.tools.text.*;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,6 +54,7 @@ public class PackageDiagnostic extends Diagnostic {
     protected Location location;
     protected Project project;
     protected ModuleDescriptor moduleDescriptor;
+    protected Path diagnosticFilePath;
 
     protected PackageDiagnostic(DiagnosticInfo diagnosticInfo, Location location) {
         this.diagnostic = DiagnosticFactory.createDiagnostic(diagnosticInfo, location);
@@ -93,6 +97,11 @@ public class PackageDiagnostic extends Diagnostic {
         this.project = project;
         this.moduleDescriptor = moduleDescriptor;
         this.location = new DiagnosticLocation(filePath, this.diagnostic.location());
+        this.diagnosticFilePath = Paths.get(filePath);
+    }
+
+    public Path diagnosticFilePath() {
+        return diagnosticFilePath;
     }
 
     @Override
