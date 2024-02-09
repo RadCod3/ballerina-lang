@@ -8,7 +8,6 @@ import io.ballerina.tools.diagnostics.Location;
 import io.ballerina.tools.text.TextDocument;
 import io.ballerina.tools.text.TextDocuments;
 import io.ballerina.tools.text.TextRange;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,7 +15,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Set;
 
-public class AnnotateDiagnostics {
+public class AnnotateDiagnostics2 {
 
     private static final Set<SyntaxKind> STATEMENT_NODES = Set.of(
             SyntaxKind.ASSIGNMENT_STATEMENT,
@@ -28,7 +27,7 @@ public class AnnotateDiagnostics {
     public static String renderDiagnostic(Diagnostic diagnostic) {
 
         if (diagnostic instanceof PackageDiagnostic packageDiagnostic) {
-            DiagnosticAnnotation diagnosticAnnotation = getDiagnosticLineFromSyntaxAPI(
+            DiagnosticAnnotation2 diagnosticAnnotation = getDiagnosticLineFromSyntaxAPI(
                     packageDiagnostic.diagnosticFilePath(), packageDiagnostic.location());
             return diagnostic + "\n" + diagnosticAnnotation;
         }
@@ -37,7 +36,7 @@ public class AnnotateDiagnostics {
     }
 
 
-    private static DiagnosticAnnotation getDiagnosticLineFromSyntaxAPI(Path diagnosticFilePath, Location location) {
+    private static DiagnosticAnnotation2 getDiagnosticLineFromSyntaxAPI(Path diagnosticFilePath, Location location) {
         String text = getSourceText(diagnosticFilePath);
         TextDocument textDocument = TextDocuments.from(text);
         SyntaxTree syntaxTree = SyntaxTree.from(textDocument, diagnosticFilePath.toString());
@@ -52,7 +51,7 @@ public class AnnotateDiagnostics {
         ArrayList<Node> siblings = getSiblingsOnSameRange(statementNode, startLine, endLine);
 
         if (isMultiline) {
-            return new DiagnosticAnnotation(
+            return new DiagnosticAnnotation2(
                     nodeListToString(siblings),
                     diagnosticNode.textRange().startOffset() - statementNode.textRangeWithMinutiae().startOffset(),
                     diagnosticNode.textRange().endOffset() - diagnosticNode.textRange().startOffset(),
@@ -60,7 +59,7 @@ public class AnnotateDiagnostics {
                     startLine + 1);
         }
 
-        return new DiagnosticAnnotation(
+        return new DiagnosticAnnotation2(
                 nodeListToString(siblings),
                 diagnosticNode.textRange().startOffset() - siblings.get(0).textRangeWithMinutiae().startOffset(),
                 diagnosticNode.textRange().endOffset() - diagnosticNode.textRange().startOffset(),
