@@ -1,10 +1,7 @@
 package io.ballerina.cli.tool;
 
 
-import io.ballerina.compiler.syntax.tree.ModulePartNode;
-import io.ballerina.compiler.syntax.tree.NonTerminalNode;
-import io.ballerina.compiler.syntax.tree.SyntaxKind;
-import io.ballerina.compiler.syntax.tree.SyntaxTree;
+import io.ballerina.compiler.syntax.tree.*;
 import io.ballerina.tools.diagnostics.Diagnostic;
 import io.ballerina.projects.internal.PackageDiagnostic;
 import io.ballerina.tools.diagnostics.Location;
@@ -16,6 +13,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Set;
 
 public class AnnotateDiagnostics {
@@ -51,10 +49,11 @@ public class AnnotateDiagnostics {
         NonTerminalNode diagnosticNode = ((ModulePartNode) syntaxTree.rootNode()).findNode(
                 TextRange.from(start, end - start), true);
         NonTerminalNode statementNode = climbUpToStatementNode(diagnosticNode, startLine, endLine);
+        ArrayList<Node> siblings = getSiblingsOnSameRange(statementNode, startLine, endLine);
 
         if (isMultiline) {
             return new DiagnosticAnnotation(
-                    statementNode.toString(),
+                    nodeListToString(siblings),
                     diagnosticNode.textRange().startOffset() - statementNode.textRangeWithMinutiae().startOffset(),
                     diagnosticNode.textRange().endOffset() - diagnosticNode.textRange().startOffset(),
                     diagnosticNode.lineRange().endLine().offset(),
@@ -62,8 +61,8 @@ public class AnnotateDiagnostics {
         }
 
         return new DiagnosticAnnotation(
-                statementNode.toString(),
-                diagnosticNode.textRange().startOffset() - statementNode.textRangeWithMinutiae().startOffset(),
+                nodeListToString(siblings),
+                diagnosticNode.textRange().startOffset() - siblings.get(0).textRangeWithMinutiae().startOffset(),
                 diagnosticNode.textRange().endOffset() - diagnosticNode.textRange().startOffset(),
                 startLine + 1);
     }
@@ -79,10 +78,34 @@ public class AnnotateDiagnostics {
             return node;
         }
 
-        if (STATEMENT_NODES.contains(parent.kind())) {
-            return parent;
-        }
+//        if (STATEMENT_NODES.contains(parent.kind())) {
+//            return parent;
+//        }
         return climbUpToStatementNode(parent, start, end);
+    }
+
+    private static ArrayList<Node> getSiblingsOnSameRange(NonTerminalNode node, int start, int end) {
+        NonTerminalNode parent = node.parent();
+        ArrayList<Node> siblings = new ArrayList<>();
+        if (parent == null) {
+            siblings.add(node);
+            return siblings;
+        }
+        ChildNodeList childNodeList = parent.children();
+        for (Node child : childNodeList) {
+            if (child.lineRange().startLine().line() >= start && child.lineRange().endLine().line() <= end) {
+                siblings.add(child);
+            }
+        }
+        return siblings;
+    }
+
+    private static String nodeListToString(ArrayList<Node> nodeList) {
+        StringBuilder sb = new StringBuilder();
+        for (Node node : nodeList) {
+            sb.append(node.toString());
+        }
+        return sb.toString();
     }
 
     private static String getSourceText(Path sourceFilePath) {
