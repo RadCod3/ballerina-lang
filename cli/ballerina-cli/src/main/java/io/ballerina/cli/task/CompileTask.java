@@ -21,18 +21,9 @@ package io.ballerina.cli.task;
 //import io.ballerina.cli.tool.AnnotateDiagnostics2;
 
 
+import io.ballerina.projects.*;
 import io.ballerina.shell.cli.AnnotateDiagnostics;
 import io.ballerina.cli.utils.BuildTime;
-import io.ballerina.projects.CodeGeneratorResult;
-import io.ballerina.projects.CodeModifierResult;
-import io.ballerina.projects.JBallerinaBackend;
-import io.ballerina.projects.JvmTarget;
-import io.ballerina.projects.PackageCompilation;
-import io.ballerina.projects.PackageResolution;
-import io.ballerina.projects.Project;
-import io.ballerina.projects.ProjectException;
-import io.ballerina.projects.ProjectKind;
-import io.ballerina.projects.SemanticVersion;
 import io.ballerina.projects.directory.SingleFileProject;
 import io.ballerina.projects.environment.ResolutionOptions;
 import io.ballerina.projects.internal.PackageDiagnostic;
@@ -45,10 +36,7 @@ import org.ballerinalang.central.client.CentralClientConstants;
 import org.wso2.ballerinalang.util.RepoUtils;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.*;
 
 import static io.ballerina.cli.launcher.LauncherUtils.createLauncherException;
 import static io.ballerina.projects.util.ProjectConstants.DOT;
@@ -213,7 +201,17 @@ public class CompileTask implements Task {
             boolean hasErrors = false;
             // HashSet to keep track of the diagnostics to avoid duplicate diagnostics
             HashSet<String> diagnosticSet = new HashSet<>();
+            // HashMap for documents based on filename
+            HashMap<String, Document> documentMap = new HashMap<>();
             int terminalWidth = AnnotateDiagnostics.getTerminalWidth();
+
+            project.currentPackage().moduleIds().forEach(moduleId -> {
+                project.currentPackage().module(moduleId).documentIds().forEach(documentId -> {
+                    Document document = project.currentPackage().module(moduleId).document(documentId);
+                    documentMap.put(getDocumentPath(document.module().moduleName(), document.name()), document);
+                });
+            });
+
             for (Diagnostic d : diagnostics) {
                 if (d.diagnosticInfo().severity().equals(DiagnosticSeverity.ERROR)) {
                     hasErrors = true;
@@ -221,7 +219,12 @@ public class CompileTask implements Task {
                 if (d.diagnosticInfo().code() == null || !d.diagnosticInfo().code().equals(
                         ProjectDiagnosticErrorCode.BUILT_WITH_OLDER_SL_UPDATE_DISTRIBUTION.diagnosticId())) {
                     if (diagnosticSet.add(d.toString())) {
-                        err.println(AnnotateDiagnostics.renderDiagnostic(d, terminalWidth));
+                        Document document = documentMap.get(d.location().lineRange().fileName());
+                        if (document != null) {
+                            err.println(AnnotateDiagnostics.renderDiagnostic(d, document, terminalWidth));
+                        } else {
+                            err.println(d.toString());
+                        }
                     }
                 }
             }
@@ -232,6 +235,13 @@ public class CompileTask implements Task {
         } catch (ProjectException e) {
             throw createLauncherException("compilation failed: " + e.getMessage());
         }
+    }
+
+    private String getDocumentPath(ModuleName moduleName, String documentName) {
+        if (moduleName.isDefaultModuleName()) {
+            return documentName;
+        }
+        return "modules" + "/" + moduleName.moduleNamePart() + "/" + documentName;
     }
 
     private boolean isPackCmdForATemplatePkg(Project project) {
