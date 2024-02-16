@@ -5,6 +5,7 @@ import io.ballerina.compiler.syntax.tree.*;
 import io.ballerina.projects.Document;
 import io.ballerina.projects.internal.PackageDiagnostic;
 import io.ballerina.tools.diagnostics.Diagnostic;
+import io.ballerina.tools.diagnostics.DiagnosticSeverity;
 import io.ballerina.tools.diagnostics.Location;
 import io.ballerina.tools.text.TextDocument;
 import io.ballerina.tools.text.TextDocuments;
@@ -18,8 +19,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+
+import static io.ballerina.shell.cli.DiagnosticAnnotation.SEVERITY_COLORS;
 
 public class AnnotateDiagnostics {
 
@@ -37,20 +41,31 @@ public class AnnotateDiagnostics {
         if (diagnosticCode.startsWith("BCE")) {
             int diagnosticCodeNumber = Integer.parseInt(diagnosticCode.substring(3));
             if (diagnosticCodeNumber < 1000) {
-                return diagnostic + getSyntaxDiagnosticAnnotation(
+                return diagnosticToString(diagnostic) + getSyntaxDiagnosticAnnotation(
                         document, diagnostic.location(), terminalWidth);
             }
         }
         DiagnosticAnnotation diagnosticAnnotation = getDiagnosticLineFromSyntaxAPI(
-                document, diagnostic.location(), terminalWidth);
-        return diagnostic + "\n" + diagnosticAnnotation;
+                document, diagnostic.location(), diagnostic.diagnosticInfo().severity(), terminalWidth);
+        return diagnosticToString(diagnostic) + "\n" + diagnosticAnnotation;
 
 
 //        return diagnostic.toString();
     }
 
+    public static String renderDiagnostic(Diagnostic diagnostic) {
+        return diagnosticToString(diagnostic);
+    }
 
-    private static DiagnosticAnnotation getDiagnosticLineFromSyntaxAPI(Document document, Location location, int terminalWidth) {
+    private static String diagnosticToString(Diagnostic diagnostic) {
+        DiagnosticSeverity severity = diagnostic.diagnosticInfo().severity();
+        int severityLength = severity.toString().length();
+        return "@|" + SEVERITY_COLORS.get(severity) + " " + severity + "|@"
+                + diagnostic.toString().substring(severityLength);
+
+    }
+
+    private static DiagnosticAnnotation getDiagnosticLineFromSyntaxAPI(Document document, Location location, DiagnosticSeverity severity, int terminalWidth) {
         TextDocument textDocument = document.textDocument();
         boolean isMultiline = location.lineRange().startLine().line() != location.lineRange().endLine().line();
         int start = location.textRange().startOffset();
@@ -69,6 +84,7 @@ public class AnnotateDiagnostics {
                     textDocument.line(startLine).length() - location.lineRange().startLine().offset(),
                     location.lineRange().endLine().offset(),
                     startLine + 1,
+                    severity,
                     terminalWidth);
         }
 
@@ -77,6 +93,7 @@ public class AnnotateDiagnostics {
                 location.lineRange().startLine().offset(),
                 location.lineRange().endLine().offset() - location.lineRange().startLine().offset(),
                 startLine + 1,
+                severity,
                 terminalWidth);
     }
 
@@ -108,7 +125,7 @@ public class AnnotateDiagnostics {
         }
 
         if (curr instanceof NonTerminalNode nonTerminalNode) {
-            if (isNotWithinRange(nonTerminalNode.textRange(), position)) {
+            if (isNotWithinRange(nonTerminalNode.textRangeWithMinutiae(), position)) {
                 return findSyntaxDiagnosticToken(curr.parent(), position, visited);
             }
 
@@ -116,7 +133,7 @@ public class AnnotateDiagnostics {
                 if (visited.contains(child.hashCode())) {
                     continue;
                 }
-                if (child instanceof NonTerminalNode && isNotWithinRange(child.textRange(), position)) {
+                if (child instanceof NonTerminalNode && isNotWithinRange(child.textRangeWithMinutiae(), position)) {
                     visited.add(child.hashCode());
                     continue;
                 }
