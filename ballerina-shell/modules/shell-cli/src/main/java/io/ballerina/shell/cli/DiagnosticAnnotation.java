@@ -108,7 +108,7 @@ public class DiagnosticAnnotation {
         if (type == DiagnosticAnnotationType.MISSING) {
             symbol = "+";
         } else if (type == DiagnosticAnnotationType.INVALID) {
-            symbol = "-";
+            symbol = "^";
         }
         return " ".repeat(offset) + "@|" + SEVERITY_COLORS.get(severity) + " " + symbol.repeat(length) + "|@";
     }
