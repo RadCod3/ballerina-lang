@@ -1,0 +1,15 @@
+NAME
+       ballerina-explain - Explain a Ballerina error code
+
+SYNOPSIS
+       bal explain <error-code>
+
+
+DESCRIPTION
+       Explain a Ballerina Diagnostic error code by providing examples
+       and possible solutions for the examples.
+
+
+EXAMPLES
+       Explain error code BCE0001.
+           $ bal explain BCE0001

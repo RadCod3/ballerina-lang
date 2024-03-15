@@ -37,6 +37,7 @@ COMMANDS
 
    Other Commands:
         clean           Clean the artifacts generated during the build
+        explain         Explain Ballerina error codes
         format          Format Ballerina source files
         grpc            Generate the Ballerina sources for a given Protocol
                         Buffer definition
